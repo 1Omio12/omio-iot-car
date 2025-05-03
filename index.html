@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>Omio's Radioactive Element Collector</title>
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Arial', sans-serif;
+  background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+.container {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+}
+h1, h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+h2 {
+  font-size: 1.5rem;
+  margin-top: 30px;
+}
+.dpad, .arm-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.arm-controls {
+  grid-template-columns: repeat(2, 1fr);
+}
+button {
+  background: #4a90e2;
+  border: none;
+  padding: 15px;
+  border-radius: 10px;
+  font-size: 1rem;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
+}
+button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(74, 144, 226, 0.7);
+}
+button:active {
+  transform: scale(0.95);
+}
+.stop {
+  background: #e94e77;
+}
+.stop:hover {
+  box-shadow: 0 0 10px rgba(233, 78, 119, 0.7);
+}
+.speed-control {
+  margin-top: 20px;
+}
+label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+}
+input[type='range'] {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 8px;
+  background: #ddd;
+  border-radius: 5px;
+  outline: none;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #4a90e2;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.reset-control {
+  margin-top: 20px;
+}
+.reset-control button {
+  background: #28a745;
+}
+.reset-control button:hover {
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.7);
+}
+</style>
+<script>
+let ws;
+let intervalId;
+
+function connectWebSocket() {
+  ws = new WebSocket('wss://your-heroku-app.herokuapp.com');
+  ws.onopen = function() {
+    console.log('WebSocket connected');
+  };
+  ws.onmessage = function(event) {
+    console.log('Received: ' + event.data);
+  };
+  ws.onclose = function() {
+    console.log('WebSocket closed');
+  };
+}
+
+function startCommand(command) {
+  intervalId = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(command);
+    }
+  }, 100);
+}
+
+function stopCommand(command) {
+  clearInterval(intervalId);
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(command);
+  }
+}
+
+connectWebSocket();
+</script>
+</head>
+<body>
+<div class='container'>
+<h1>Car & Arm Control</h1>
+<h2>Car Controls</h2>
+<div class='dpad'>
+  <div></div>
+  <button onmousedown='startCommand("forward")' onmouseup='stopCommand("stop")' onmouseleave='stopCommand("stop")'>↑ Forward</button>
+  <div></div>
+  <button onmousedown='startCommand("left")' onmouseup='stopCommand("stop")' onmouseleave='stopCommand("stop")'>← Left</button>
+  <button class='stop' onclick='if (ws.readyState === WebSocket.OPEN) ws.send("stop")'>■ Stop</button>
+  <button onmousedown='startCommand("right")' onmouseup='stopCommand("stop")' onmouseleave='stopCommand("stop")'>→ Right</button>
+  <div></div>
+  <button onmousedown='startCommand("backward")' onmouseup='stopCommand("stop")' onmouseleave='stopCommand("stop")'>↓ Backward</button>
+  <div></div>
+</div>
+<div class='speed-control'>
+  <label for='speed'>Speed: <span id='speedValue'>128</span></label>
+  <input type='range' id='speed' min='0' max='255' value='128' oninput='document.getElementById("speedValue").innerText=this.value' onchange='if (ws.readyState === WebSocket.OPEN) ws.send("setSpeed:" + this.value)'>
+</div>
+<h2>Arm Controls</h2>
+<div class='arm-controls'>
+  <button onmousedown='startCommand("servo1RightStart")' onmouseup='stopCommand("servo1RightStop")' onmouseleave='stopCommand("servo1RightStop")'>↶ Base Left</button>
+  <button onmousedown='startCommand("servo1LeftStart")' onmouseup='stopCommand("servo1LeftStop")' onmouseleave='stopCommand("servo1LeftStop")'>↷ Base Right</button>
+  <button onmousedown='startCommand("servo2BackwardStart")' onmouseup='stopCommand("servo2BackwardStop")' onmouseleave='stopCommand("servo2BackwardStop")'>⤴ Arm Forward</button>
+  <button onmousedown='startCommand("servo2ForwardStart")' onmouseup='stopCommand("servo2ForwardStop")' onmouseleave='stopCommand("servo2ForwardStop")'>⤵ Arm Backward</button>
+  <button onmousedown='startCommand("servo3UpStart")' onmouseup='stopCommand("servo3UpStop")' onmouseleave='stopCommand("servo3UpStop")'>▲ Arm Up</button>
+  <button onmousedown='startCommand("servo3DownStart")' onmouseup='stopCommand("servo3DownStop")' onmouseleave='stopCommand("servo3DownStop")'>▼ Arm Down</button>
+  <button onmousedown='startCommand("servo4OpenStart")' onmouseup='stopCommand("servo4OpenStop")' onmouseleave='stopCommand("servo4OpenStop")'>Open Claw</button>
+  <button onmousedown='startCommand("servo4CloseStart")' onmouseup='stopCommand("servo4CloseStop")' onmouseleave='stopCommand("servo4CloseStop")'>Close Claw</button>
+</div>
+<div class='reset-control'>
+  <button onclick='if (ws.readyState === WebSocket.OPEN) ws.send("resetMotors")'>Reset To Initial State</button>
+</div>
+</div>
+</body>
+</html>
